@@ -1,18 +1,14 @@
 package ph.edu.auf.realmdiscussion.screens
 
-import android.util.Log
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
@@ -28,8 +24,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
@@ -47,12 +45,19 @@ fun PetScreen(petViewModel: PetViewModel = viewModel()) {
     var snackbarShown by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
 
-    // Filter pets based on search query (name or age)
+    // States for Add Pet Dialog
+    var showAddDialog by remember { mutableStateOf(false) }
+    var petName by remember { mutableStateOf("") }
+    var petType by remember { mutableStateOf("") }
+    var petAge by remember { mutableStateOf("") }
+
+    // Filter the pet list based on the search query
     val filteredPets = pets.filter { pet ->
         pet.name.contains(searchQuery, ignoreCase = true) ||
                 pet.age.toString().contains(searchQuery)
     }
 
+    // Show snackbar messages
     LaunchedEffect(petViewModel.showSnackbar) {
         petViewModel.showSnackbar.collect { message ->
             if (!snackbarShown) {
@@ -63,17 +68,16 @@ fun PetScreen(petViewModel: PetViewModel = viewModel()) {
                         actionLabel = "Dismiss",
                         duration = SnackbarDuration.Short
                     )
-                    when (result) {
-                        SnackbarResult.Dismissed, SnackbarResult.ActionPerformed -> {
-                            snackbarShown = false
-                        }
+                    if (result == SnackbarResult.Dismissed || result == SnackbarResult.ActionPerformed) {
+                        snackbarShown = false
                     }
                 }
             }
         }
     }
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.fillMaxSize()) {
         // Search Field
         OutlinedTextField(
             value = searchQuery,
@@ -84,6 +88,16 @@ fun PetScreen(petViewModel: PetViewModel = viewModel()) {
                 .padding(16.dp)
         )
 
+        // Add New Pet Button
+        Button(
+            onClick = { showAddDialog = true },
+            modifier = Modifier
+                .padding(16.dp)
+        ) {
+            Text("Add New Pet")
+        }
+
+        // Pet List
         Scaffold(
             snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
         ) { paddingValues ->
@@ -97,5 +111,60 @@ fun PetScreen(petViewModel: PetViewModel = viewModel()) {
             }
         }
     }
-}
 
+    // Add New Pet Dialog
+    if (showAddDialog) {
+        AlertDialog(
+            onDismissRequest = { showAddDialog = false },
+            title = { Text("Add New Pet") },
+            text = {
+                Column {
+                    OutlinedTextField(
+                        value = petName,
+                        onValueChange = { petName = it },
+                        label = { Text("Name") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = petType,
+                        onValueChange = { petType = it },
+                        label = { Text("Type") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = petAge,
+                        onValueChange = { petAge = it },
+                        label = { Text("Age") },
+                        modifier = Modifier.fillMaxWidth(),
+                        keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number)
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val age = petAge.toIntOrNull()
+                        if (petName.isNotBlank() && petType.isNotBlank() && age != null) {
+                            petViewModel.addPet(name = petName, petType = petType, age = age)
+                            petName = ""
+                            petType = ""
+                            petAge = ""
+                            showAddDialog = false
+                        }
+                    },
+                    modifier = Modifier.padding(8.dp)
+                ) {
+                    Text("Add")
+                }
+            },
+            dismissButton = {
+                Button(
+                    onClick = { showAddDialog = false },
+                    modifier = Modifier.padding(8.dp)
+                ) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+}

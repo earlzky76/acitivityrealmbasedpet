@@ -22,7 +22,7 @@ class PetViewModel : ViewModel() {
     private val _showSnackbar = MutableSharedFlow<String>()
     val showSnackbar: SharedFlow<String> = _showSnackbar
 
-    init{
+    init {
         loadPets()
     }
 
@@ -34,12 +34,12 @@ class PetViewModel : ViewModel() {
         }
     }
 
-    fun deletePet(model:PetModel){
-        viewModelScope.launch(Dispatchers.IO){
+    fun deletePet(model: PetModel) {
+        viewModelScope.launch(Dispatchers.IO) {
             val realm = RealmHelper.getRealmInstance()
             realm.write {
-                val pet = this.query<PetModel>("id == $0",model.id).first().find()
-                if(pet != null){
+                val pet = this.query<PetModel>("id == $0", model.id).first().find()
+                if (pet != null) {
                     delete(pet)
                     _pets.update {
                         val list = it.toMutableList()
@@ -52,4 +52,28 @@ class PetViewModel : ViewModel() {
         }
     }
 
+    fun addPet(name: String, petType: String, age: Int) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val realm = RealmHelper.getRealmInstance()
+            val newPet = PetModel().apply {
+                this.name = name
+                this.petType = petType
+                this.age = age
+            }
+
+            realm.write {
+                copyToRealm(newPet)
+            }
+
+            // Update the pets list
+            _pets.update {
+                val updatedList = it.toMutableList()
+                updatedList.add(newPet)
+                updatedList
+            }
+
+            // Emit a snackbar message
+            _showSnackbar.emit("Added ${newPet.name}")
+        }
+    }
 }
