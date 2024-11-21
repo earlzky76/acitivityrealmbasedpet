@@ -1,5 +1,6 @@
 package ph.edu.auf.realmdiscussion.components
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -23,43 +24,42 @@ import ph.edu.auf.realmdiscussion.database.realmodel.PetModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ItemPet(petModel: PetModel, onRemove: (PetModel) -> Unit){
+fun ItemPet(petModel: PetModel, onRemove: (PetModel) -> Unit, onClick: () -> Unit) {
 
     val currentItem by rememberUpdatedState(petModel)
 
     var dismissState = rememberSwipeToDismissBoxState(
         confirmValueChange = {
-            when(it){
+            when (it) {
                 SwipeToDismissBoxValue.StartToEnd -> {
-                    //DELETION PART
+                    // DELETION PART
                     onRemove(currentItem)
                 }
                 SwipeToDismissBoxValue.EndToStart -> {
-                    //OTHER FUNCTION
+                    // OTHER FUNCTION
                     return@rememberSwipeToDismissBoxState false
                 }
                 SwipeToDismissBoxValue.Settled -> {
-                    //NOTHING
+                    // NOTHING
                     return@rememberSwipeToDismissBoxState false
                 }
             }
             return@rememberSwipeToDismissBoxState true
         },
-        //25% of the width of the card/box
-        positionalThreshold = {it * .25f}
+        // 25% of the width of the card/box
+        positionalThreshold = { it * .25f }
     )
 
     SwipeToDismissBox(
         state = dismissState,
-        backgroundContent = { DismissBackground(dismissState)},
+        backgroundContent = { DismissBackground(dismissState) },
         content = {
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(0.dp, 8.dp),
-                elevation =  CardDefaults.cardElevation(
-                    defaultElevation = 5.dp
-                ),
+                    .padding(0.dp, 8.dp)
+                    .clickable(onClick = onClick), // Make the card clickable to open the edit dialog
+                elevation = CardDefaults.cardElevation(defaultElevation = 5.dp),
                 shape = RoundedCornerShape(5.dp)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {

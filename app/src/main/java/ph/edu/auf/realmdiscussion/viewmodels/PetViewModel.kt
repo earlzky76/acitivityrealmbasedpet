@@ -76,4 +76,37 @@ class PetViewModel : ViewModel() {
             _showSnackbar.emit("Added ${newPet.name}")
         }
     }
+
+    fun updatePet(id: String, name: String, petType: String, age: Int) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val realm = RealmHelper.getRealmInstance()
+
+            // Update the pet in the database
+            realm.write {
+                val petToUpdate = this.query<PetModel>("id == $0", id).first().find()
+                petToUpdate?.apply {
+                    this.name = name
+                    this.petType = petType
+                    this.age = age
+                }
+            }
+
+            // Update the pets list in the UI
+            _pets.update {
+                val updatedList = it.toMutableList()
+                val petIndex = updatedList.indexOfFirst { pet -> pet.id == id }
+                if (petIndex != -1) {
+                    val petToUpdate = updatedList[petIndex]
+                    petToUpdate.name = name
+                    petToUpdate.petType = petType
+                    petToUpdate.age = age
+                }
+                updatedList
+            }
+
+            // Emit a snackbar message
+            _showSnackbar.emit("Updated $name")
+        }
+    }
+
 }

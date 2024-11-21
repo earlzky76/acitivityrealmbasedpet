@@ -51,6 +51,13 @@ fun PetScreen(petViewModel: PetViewModel = viewModel()) {
     var petType by remember { mutableStateOf("") }
     var petAge by remember { mutableStateOf("") }
 
+    // States for Edit Pet Dialog
+    var showEditDialog by remember { mutableStateOf(false) }
+    var currentOwnerId by remember { mutableStateOf("") }
+    var currentOwnerName by remember { mutableStateOf("") }
+    var currentOwnerType by remember { mutableStateOf("") }
+    var currentOwnerAge by remember { mutableStateOf("") }
+
     // Filter the pet list based on the search query
     val filteredPets = pets.filter { pet ->
         pet.name.contains(searchQuery, ignoreCase = true) ||
@@ -106,7 +113,18 @@ fun PetScreen(petViewModel: PetViewModel = viewModel()) {
                     items = filteredPets,
                     key = { _, item -> item.id }
                 ) { _, petContent ->
-                    ItemPet(petContent, onRemove = petViewModel::deletePet)
+                    // Making the pet item clickable to show the edit dialog
+                    ItemPet(
+                        petContent,
+                        onRemove = petViewModel::deletePet,
+                        onClick = {
+                            currentOwnerId = petContent.id
+                            currentOwnerName = petContent.name
+                            currentOwnerType = petContent.petType
+                            currentOwnerAge = petContent.age.toString()
+                            showEditDialog = true
+                        }
+                    )
                 }
             }
         }
@@ -160,6 +178,64 @@ fun PetScreen(petViewModel: PetViewModel = viewModel()) {
             dismissButton = {
                 Button(
                     onClick = { showAddDialog = false },
+                    modifier = Modifier.padding(8.dp)
+                ) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    // Edit Pet Dialog
+    if (showEditDialog) {
+        AlertDialog(
+            onDismissRequest = { showEditDialog = false },
+            title = { Text("Edit Pet") },
+            text = {
+                Column {
+                    OutlinedTextField(
+                        value = currentOwnerName,
+                        onValueChange = { currentOwnerName = it },
+                        label = { Text("Name") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = currentOwnerType,
+                        onValueChange = { currentOwnerType = it },
+                        label = { Text("Type") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = currentOwnerAge,
+                        onValueChange = { currentOwnerAge = it },
+                        label = { Text("Age") },
+                        modifier = Modifier.fillMaxWidth(),
+                        keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number)
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val age = currentOwnerAge.toIntOrNull()
+                        if (currentOwnerName.isNotBlank() && currentOwnerType.isNotBlank() && age != null) {
+                            petViewModel.updatePet(
+                                id = currentOwnerId,
+                                name = currentOwnerName,
+                                petType = currentOwnerType,
+                                age = age
+                            )
+                            showEditDialog = false
+                        }
+                    },
+                    modifier = Modifier.padding(8.dp)
+                ) {
+                    Text("Save")
+                }
+            },
+            dismissButton = {
+                Button(
+                    onClick = { showEditDialog = false },
                     modifier = Modifier.padding(8.dp)
                 ) {
                     Text("Cancel")
