@@ -24,7 +24,7 @@ fun HomeScreen(navController: NavController){
         modifier = Modifier.fillMaxSize())
     {
         Text(
-           text = "Pet Realm Sampler",
+           text = "Mythical Pets Inc.",
             style = TextStyle(
                 fontWeight = FontWeight.Bold,
                 fontSize = 24.sp
