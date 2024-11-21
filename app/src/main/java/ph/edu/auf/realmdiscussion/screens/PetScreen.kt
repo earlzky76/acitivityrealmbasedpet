@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -12,6 +13,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
@@ -36,18 +38,24 @@ import ph.edu.auf.realmdiscussion.viewmodels.PetViewModel
 
 
 @Composable
-fun PetScreen(petViewModel: PetViewModel = viewModel()){
+fun PetScreen(petViewModel: PetViewModel = viewModel()) {
 
     val pets by petViewModel.pets.collectAsState()
-    val snackbarHostState = remember { SnackbarHostState()}
+    val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
 
     var snackbarShown by remember { mutableStateOf(false) }
+    var searchQuery by remember { mutableStateOf("") }
 
-    LaunchedEffect(petViewModel.showSnackbar)
-    {
-        petViewModel.showSnackbar.collect{ message ->
-            if(!snackbarShown){
+    // Filter pets based on search query (name or age)
+    val filteredPets = pets.filter { pet ->
+        pet.name.contains(searchQuery, ignoreCase = true) ||
+                pet.age.toString().contains(searchQuery)
+    }
+
+    LaunchedEffect(petViewModel.showSnackbar) {
+        petViewModel.showSnackbar.collect { message ->
+            if (!snackbarShown) {
                 snackbarShown = true
                 coroutineScope.launch {
                     val result = snackbarHostState.showSnackbar(
@@ -55,13 +63,8 @@ fun PetScreen(petViewModel: PetViewModel = viewModel()){
                         actionLabel = "Dismiss",
                         duration = SnackbarDuration.Short
                     )
-                    when(result){
-                        SnackbarResult.Dismissed ->{
-                            Log.d("PetScreen", "Dismissed")
-                            snackbarShown = false
-                        }
-                        SnackbarResult.ActionPerformed ->{
-                            Log.d("PetScreen", "Action performed")
+                    when (result) {
+                        SnackbarResult.Dismissed, SnackbarResult.ActionPerformed -> {
                             snackbarShown = false
                         }
                     }
@@ -71,25 +74,28 @@ fun PetScreen(petViewModel: PetViewModel = viewModel()){
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
+        // Search Field
+        OutlinedTextField(
+            value = searchQuery,
+            onValueChange = { searchQuery = it },
+            label = { Text("Search by name or age") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        )
+
         Scaffold(
-            snackbarHost = { SnackbarHost(hostState = snackbarHostState)}
+            snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
         ) { paddingValues ->
             LazyColumn(modifier = Modifier.padding(paddingValues)) {
                 itemsIndexed(
-                    items = pets,
-                    key = {_,item -> item.id}
-                ){_, petContent->
+                    items = filteredPets,
+                    key = { _, item -> item.id }
+                ) { _, petContent ->
                     ItemPet(petContent, onRemove = petViewModel::deletePet)
                 }
             }
         }
-
     }
-
 }
 
-@Preview(showBackground = true)
-@Composable
-fun PetScreenPreview(){
-    PetScreen()
-}
